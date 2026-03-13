@@ -37,6 +37,7 @@ import { EntityPanelCard } from './components/EntityPanelCard'
 import { CommandBranchTree } from './components/CommandBranchTree'
 import { ViewOptionsPanel } from './components/ViewOptionsPanel'
 import { MacroArgsPanel } from './components/MacroArgsPanel'
+import { PanelCollapseButton } from './components/PanelCollapseButton'
 
 const INCOMPLETE_PARSE_MESSAGES = new Set([
   'Expected an entity selector.',
@@ -71,6 +72,10 @@ const DEFAULT_MARKER_SIZE = 3
 const DEFAULT_MARKER_OPACITY = 75
 const MIN_VIEW_OPTIONS_WIDTH = 260
 const DEFAULT_VIEW_OPTIONS_WIDTH = 320
+const MIN_VIEWER_WIDTH = 320
+const COLLAPSED_SIDE_PANEL_WIDTH = 52
+const COLLAPSED_VIEW_OPTIONS_WIDTH = 52
+const MIN_ENTITIES_PANEL_WIDTH = 400
 const reorderPanels = (panels: EntityPanel[], fromId: string, toId: string): EntityPanel[] => {
   const fromIndex = panels.findIndex((panel) => panel.id === fromId)
   const toIndex = panels.findIndex((panel) => panel.id === toId)
@@ -121,6 +126,12 @@ function App() {
   const [viewTargetZ, setViewTargetZ] = useState('0')
   const [macroArgsInput, setMacroArgsInput] = useState('')
   const [saveLoadStatus, setSaveLoadStatus] = useState<{ tone: 'success' | 'error'; message: string } | null>(null)
+  const [isViewerSideCollapsed, setIsViewerSideCollapsed] = useState(false)
+  const [isEntitiesCollapsed, setIsEntitiesCollapsed] = useState(false)
+  const [isCommandTreeCollapsed, setIsCommandTreeCollapsed] = useState(false)
+
+  const effectiveSidePanelWidth = isEntitiesCollapsed ? COLLAPSED_SIDE_PANEL_WIDTH : sidePanelWidth
+  const effectiveViewOptionsWidth = isViewerSideCollapsed ? COLLAPSED_VIEW_OPTIONS_WIDTH : viewOptionsWidth
 
   const allEntities = useMemo(() => entityPanels.map((panel) => toEntityState(panel)), [entityPanels])
   const visibleEntities = useMemo(
@@ -336,9 +347,19 @@ function App() {
       }
 
       const rect = layout.getBoundingClientRect()
-      const minPanelWidth = 280
+      const minPanelWidth = MIN_ENTITIES_PANEL_WIDTH
       const splitterWidth = 8
-      const maxPanelWidth = Math.max(minPanelWidth, rect.width - 280 - splitterWidth)
+      const layoutColumnGap = Number.parseFloat(window.getComputedStyle(layout).columnGap) || 0
+      const viewerInternalGap = 8
+      const minViewerPanelWidth =
+        MIN_VIEWER_WIDTH +
+        splitterWidth +
+        MIN_VIEW_OPTIONS_WIDTH +
+        viewerInternalGap * 2
+      const maxPanelWidth = Math.max(
+        minPanelWidth,
+        rect.width - minViewerPanelWidth - splitterWidth - layoutColumnGap * 2,
+      )
       const nextPanelWidth = rect.right - event.clientX - splitterWidth / 2
       const clamped = Math.min(maxPanelWidth, Math.max(minPanelWidth, nextPanelWidth))
       setSidePanelWidth(Math.round(clamped))
@@ -375,7 +396,7 @@ function App() {
 
       const rect = layout.getBoundingClientRect()
       const splitterWidth = 8
-      const minViewerWidth = 320
+      const minViewerWidth = MIN_VIEWER_WIDTH
       const maxPanelWidth = Math.max(MIN_VIEW_OPTIONS_WIDTH, rect.width - minViewerWidth - splitterWidth)
       const nextPanelWidth = rect.right - event.clientX - splitterWidth / 2
       const clamped = Math.min(maxPanelWidth, Math.max(MIN_VIEW_OPTIONS_WIDTH, nextPanelWidth))
@@ -634,7 +655,7 @@ function App() {
       const raw = await navigator.clipboard.readText()
       const restored = parseSerializedAppState(JSON.parse(raw), {
         maxMarkerSize: MAX_MARKER_SIZE,
-        minSidePanelWidth: 280,
+        minSidePanelWidth: MIN_ENTITIES_PANEL_WIDTH,
         minViewOptionsWidth: MIN_VIEW_OPTIONS_WIDTH,
         minCommandPanelHeight: 120,
       })
@@ -900,12 +921,12 @@ function App() {
       <main
         ref={contentLayoutRef}
         className="content-layout"
-        style={{ gridTemplateColumns: `minmax(0, 1fr) 8px minmax(280px, ${sidePanelWidth}px)` }}
+        style={{ gridTemplateColumns: `minmax(0, 1fr) 8px ${effectiveSidePanelWidth}px` }}
       >
         <section
           ref={viewerPanelRef}
           className="viewer-panel"
-          style={{ '--viewer-options-width': `${viewOptionsWidth}px` } as CSSProperties}
+          style={{ '--viewer-options-width': `${effectiveViewOptionsWidth}px` } as CSSProperties}
         >
           <div
             className={`viewer-panel-resizer panel-resizer${isResizingViewOptions ? ' active' : ''}`}
@@ -914,8 +935,10 @@ function App() {
             aria-orientation="vertical"
             aria-label="Resize view options panel"
           />
-          <div className="viewer-side-stack">
+          <div className={`viewer-side-stack side-panel${isViewerSideCollapsed ? ' collapsed' : ''}`}>
             <ViewOptionsPanel
+              collapsed={isViewerSideCollapsed}
+              onToggleCollapsed={() => setIsViewerSideCollapsed((prev) => !prev)}
               maxMarkerSize={MAX_MARKER_SIZE}
               markerSize={viewMarkerSize}
               markerOpacity={viewMarkerOpacity}
@@ -931,7 +954,7 @@ function App() {
               onNormalizeTargetField={normalizeViewTargetField}
               onStartTargetSpinDrag={startViewTargetSpinDrag}
             />
-            <MacroArgsPanel value={macroArgsInput} onChange={setMacroArgsInput} />
+            {!isViewerSideCollapsed && <MacroArgsPanel value={macroArgsInput} onChange={setMacroArgsInput} />}
           </div>
           {activeEntity ? (
             <ThreeViewer
@@ -963,45 +986,60 @@ function App() {
           aria-label="Resize entities panel"
         />
 
-        <aside className="side-panel">
-          <div className="entity-head">
-            <h2>Entities</h2>
-            <button type="button" className="mini-btn" onClick={addPanel}>
-              + Add
-            </button>
+        <aside className={`side-panel entity-side-panel${isEntitiesCollapsed ? ' collapsed' : ''}`}>
+          <div className="entity-head panel-toggle-head">
+            <div className="panel-head-title">
+              <h2>Entities</h2>
+              <PanelCollapseButton
+                axis="horizontal"
+                collapsed={isEntitiesCollapsed}
+                onClick={() => setIsEntitiesCollapsed((prev) => !prev)}
+              />
+            </div>
+            <div className="panel-head-actions">
+              <button type="button" className="mini-btn" onClick={addPanel}>
+                + Add
+              </button>
+            </div>
           </div>
 
-          <div className="entity-list">
-            {entityPanels.map((panel) => (
-              <EntityPanelCard
-                key={panel.id}
-                panel={panel}
-                onHoverEnter={setHoveredEntityPanelId}
-                onHoverLeave={(id) => setHoveredEntityPanelId((current) => (current === id ? null : current))}
-                onReorderOver={reorderOnDragOver}
-                onDropOn={dropOnPanel}
-                onDragStart={setDraggedPanelId}
-                onDragEnd={() => setDraggedPanelId(null)}
-                onUpdatePanel={updatePanel}
-                onToggleMarkerVisibility={toggleMarkerVisibility}
-                onRemovePanel={removePanel}
-                onStartSpinDrag={startSpinDrag}
-              />
-            ))}
-          </div>
+          {!isEntitiesCollapsed && (
+            <div className="entity-list">
+              {entityPanels.map((panel) => (
+                <EntityPanelCard
+                  key={panel.id}
+                  panel={panel}
+                  onHoverEnter={setHoveredEntityPanelId}
+                  onHoverLeave={(id) => setHoveredEntityPanelId((current) => (current === id ? null : current))}
+                  onReorderOver={reorderOnDragOver}
+                  onDropOn={dropOnPanel}
+                  onDragStart={setDraggedPanelId}
+                  onDragEnd={() => setDraggedPanelId(null)}
+                  onUpdatePanel={updatePanel}
+                  onToggleMarkerVisibility={toggleMarkerVisibility}
+                  onRemovePanel={removePanel}
+                  onStartSpinDrag={startSpinDrag}
+                />
+              ))}
+            </div>
+          )}
         </aside>
       </main>
 
-      <div
-        className={`command-panel-resizer${isResizingCommandPanel ? ' active' : ''}`}
-        onMouseDown={() => setIsResizingCommandPanel(true)}
-        role="separator"
-        aria-orientation="horizontal"
-        aria-label="Resize subcommand list"
-      />
+      {!isCommandTreeCollapsed && (
+        <div
+          className={`command-panel-resizer${isResizingCommandPanel ? ' active' : ''}`}
+          onMouseDown={() => setIsResizingCommandPanel(true)}
+          role="separator"
+          aria-orientation="horizontal"
+          aria-label="Resize subcommand list"
+        />
+      )}
 
       <CommandBranchTree
         commandPanelHeight={commandPanelHeight}
+        collapsed={isCommandTreeCollapsed}
+        onToggleCollapsed={() => setIsCommandTreeCollapsed((prev) => !prev)}
         subcommandTexts={subcommandTexts}
         branchRows={branchRows}
         runTokenIndex={runTokenIndex}
@@ -1045,6 +1083,7 @@ function App() {
 }
 
 export default App
+
 
 
 

@@ -3,6 +3,7 @@ import type { MouseEvent as ReactMouseEvent } from 'react'
 import type { BranchRow } from '../branching/executeBranchState'
 import type { CommandSourceState, EntityState, ParseError } from '../types/execute'
 import { colorForSubcommandKind, colorHexString } from '../viewer/subcommandColors'
+import { PanelCollapseButton } from './PanelCollapseButton'
 
 type HoverTooltip = {
   x: number
@@ -11,6 +12,8 @@ type HoverTooltip = {
 
 type CommandBranchTreeProps = {
   commandPanelHeight: number
+  collapsed: boolean
+  onToggleCollapsed: () => void
   subcommandTexts: string[]
   branchRows: BranchRow[]
   runTokenIndex: number
@@ -62,6 +65,8 @@ const formatTooltipExecutor = (state: CommandSourceState, entities: EntityState[
 
 export const CommandBranchTree = ({
   commandPanelHeight,
+  collapsed,
+  onToggleCollapsed,
   subcommandTexts,
   branchRows,
   runTokenIndex,
@@ -123,9 +128,18 @@ export const CommandBranchTree = ({
   }
 
   return (
-    <div className="command-preview" style={{ height: `${commandPanelHeight}px` }} onMouseLeave={onClearHoverState}>
-      <div className="entity-head command-preview-head"><h2>Subcommand Branch Tree</h2></div>
-      {subcommandTexts.length > 0 && branchRows.length > 0 && (
+    <div
+      className={`command-preview${collapsed ? ' collapsed' : ''}`}
+      style={collapsed ? undefined : { height: `${commandPanelHeight}px` }}
+      onMouseLeave={onClearHoverState}
+    >
+      <div className="entity-head command-preview-head panel-toggle-head">
+        <div className="panel-head-title">
+          <h2>Subcommand Branch Tree</h2>
+          <PanelCollapseButton axis="vertical" collapsed={collapsed} onClick={onToggleCollapsed} />
+        </div>
+      </div>
+      {!collapsed && subcommandTexts.length > 0 && branchRows.length > 0 && (
         <div className="branch-grid-wrap">
           <table
             className="branch-grid"
@@ -144,7 +158,7 @@ export const CommandBranchTree = ({
                     event.stopPropagation()
                     onToggleAll()
                   }}
-                  title="Toggle all markers"
+                  title="Toggle all locators"
                 />
                 <th className="grid-head-static" />
                 {subcommandTexts.map((_, subcommandIndex) => (
@@ -299,7 +313,7 @@ export const CommandBranchTree = ({
           </table>
         </div>
       )}
-      {hoveredState && hoverTooltip && (
+      {!collapsed && hoveredState && hoverTooltip && (
         <div
           className="command-tooltip"
           style={{ left: hoverTooltip.x, top: hoverTooltip.y }}
@@ -312,7 +326,7 @@ export const CommandBranchTree = ({
         </div>
       )}
 
-      {visibleParseError && (
+      {!collapsed && visibleParseError && (
         <div className="command-error-inline">
           Parse Error: {visibleParseError.message} (token {visibleParseError.tokenIndex})
         </div>

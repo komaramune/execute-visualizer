@@ -176,7 +176,7 @@ export const EntityPanelCard = ({
           type="button"
           className={`mini-btn toggle-btn${panel.markerVisible ? '' : ' off'}`}
           onClick={() => onToggleMarkerVisibility(panel.id)}
-          title="Toggle marker visibility"
+          title="Toggle locator visibility"
         >
           <EyeIcon visible={panel.markerVisible} />
         </button>
@@ -243,7 +243,7 @@ export const EntityPanelCard = ({
               label="yaw"
               value={panel.yaw}
               title="Drag up/down to adjust yaw"
-              className="field-inline"
+              className="field-inline yaw-field"
               onChangeValue={(value) => onUpdatePanel(panel.id, { yaw: value })}
               onBlurValue={() => onUpdatePanel(panel.id, { yaw: normalizePanelFieldString('yaw', panel.yaw) })}
               onStartSpinDrag={onStartSpinDrag}

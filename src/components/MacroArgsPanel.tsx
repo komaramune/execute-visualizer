@@ -4,7 +4,7 @@ type MacroArgsPanelProps = {
 }
 
 export const MacroArgsPanel = ({ value, onChange }: MacroArgsPanelProps) => (
-  <div className="macro-args-panel side-panel">
+  <section className="macro-args-section">
     <div className="entity-head">
       <h2>Macro Args</h2>
     </div>
@@ -17,5 +17,5 @@ export const MacroArgsPanel = ({ value, onChange }: MacroArgsPanelProps) => (
         spellCheck={false}
       />
     </div>
-  </div>
+  </section>
 )

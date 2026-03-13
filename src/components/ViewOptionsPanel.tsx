@@ -5,8 +5,11 @@ import {
   type EntityPanel,
   type PositionField,
 } from '../entities/entityPanelState'
+import { PanelCollapseButton } from './PanelCollapseButton'
 
 type ViewOptionsPanelProps = {
+  collapsed: boolean
+  onToggleCollapsed: () => void
   maxMarkerSize: number
   markerSize: number
   markerOpacity: number
@@ -69,6 +72,8 @@ const ViewTargetCoordField = ({
 )
 
 export const ViewOptionsPanel = ({
+  collapsed,
+  onToggleCollapsed,
   maxMarkerSize,
   markerSize,
   markerOpacity,
@@ -84,75 +89,81 @@ export const ViewOptionsPanel = ({
   onNormalizeTargetField,
   onStartTargetSpinDrag,
 }: ViewOptionsPanelProps) => (
-  <div className="viewer-options side-panel">
-    <div className="entity-head">
-      <h2>View Options</h2>
+  <section className="viewer-options-section">
+    <div className="entity-head panel-toggle-head">
+      <div className="panel-head-title">
+        <h2>View Options</h2>
+        <PanelCollapseButton axis="horizontal" collapsed={collapsed} onClick={onToggleCollapsed} />
+      </div>
     </div>
-    <div className="viewer-options-list entity-list">
-      <label className="viewer-option-inline">
-        <span>marker<br />size</span>
-        <div className="viewer-slider-wrap">
-          <input
-            type="range"
-            min={0}
-            max={maxMarkerSize}
-            step={1}
-            value={markerSize}
-            onChange={(event) => onMarkerSizeChange(Number(event.target.value))}
-          />
-          <output>{markerSize}</output>
-        </div>
-      </label>
-      <label className="viewer-option-inline">
-        <span>marker<br />opacity</span>
-        <div className="viewer-slider-wrap">
-          <input
-            type="range"
-            min={0}
-            max={100}
-            step={1}
-            value={markerOpacity}
-            onChange={(event) => onMarkerOpacityChange(Number(event.target.value))}
-          />
-          <output>{markerOpacity}</output>
-        </div>
-      </label>
-      <label className="viewer-option-inline">
-        <span>camera<br />target</span>
-        <select value={targetSelection} onChange={(event) => onTargetSelectionChange(event.target.value)}>
-          <option value="coords">X Y Z</option>
-          {entityPanels.map((panel, index) => (
-            <option key={panel.id} value={VIEW_TARGET_ENTITY_PREFIX + panel.id}>
-              {panel.name.trim() || `entity${index + 1}`}
-            </option>
-          ))}
-        </select>
-      </label>
-      {targetSelection === 'coords' && (
-        <div className="viewer-coords-row">
-          <ViewTargetCoordField
-            field="x"
-            value={targetX}
-            onUpdateTargetField={onUpdateTargetField}
-            onNormalizeTargetField={onNormalizeTargetField}
-            onStartTargetSpinDrag={onStartTargetSpinDrag}
-          />
-          <ViewTargetCoordField
-            field="y"
-            value={targetY}
-            onUpdateTargetField={onUpdateTargetField}
-            onNormalizeTargetField={onNormalizeTargetField}
-            onStartTargetSpinDrag={onStartTargetSpinDrag}
-          />
-          <ViewTargetCoordField
-            field="z"
-            value={targetZ}
-            onUpdateTargetField={onUpdateTargetField}
-            onNormalizeTargetField={onNormalizeTargetField}
-            onStartTargetSpinDrag={onStartTargetSpinDrag}
-          />
-        </div>
-      )}
-    </div>
-  </div>
+
+    {!collapsed && (
+      <div className="viewer-options-list entity-list">
+        <label className="viewer-option-inline">
+          <span>locator<br />size</span>
+          <div className="viewer-slider-wrap">
+            <input
+              type="range"
+              min={0}
+              max={maxMarkerSize}
+              step={1}
+              value={markerSize}
+              onChange={(event) => onMarkerSizeChange(Number(event.target.value))}
+            />
+            <output>{markerSize}</output>
+          </div>
+        </label>
+        <label className="viewer-option-inline">
+          <span>locator<br />opacity</span>
+          <div className="viewer-slider-wrap">
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={1}
+              value={markerOpacity}
+              onChange={(event) => onMarkerOpacityChange(Number(event.target.value))}
+            />
+            <output>{markerOpacity}</output>
+          </div>
+        </label>
+        <label className="viewer-option-inline">
+          <span>camera<br />target</span>
+          <select value={targetSelection} onChange={(event) => onTargetSelectionChange(event.target.value)}>
+            <option value="coords">X Y Z</option>
+            {entityPanels.map((panel, index) => (
+              <option key={panel.id} value={VIEW_TARGET_ENTITY_PREFIX + panel.id}>
+                {panel.name.trim() || `entity${index + 1}`}
+              </option>
+            ))}
+          </select>
+        </label>
+        {targetSelection === 'coords' && (
+          <div className="viewer-coords-row">
+            <ViewTargetCoordField
+              field="x"
+              value={targetX}
+              onUpdateTargetField={onUpdateTargetField}
+              onNormalizeTargetField={onNormalizeTargetField}
+              onStartTargetSpinDrag={onStartTargetSpinDrag}
+            />
+            <ViewTargetCoordField
+              field="y"
+              value={targetY}
+              onUpdateTargetField={onUpdateTargetField}
+              onNormalizeTargetField={onNormalizeTargetField}
+              onStartTargetSpinDrag={onStartTargetSpinDrag}
+            />
+            <ViewTargetCoordField
+              field="z"
+              value={targetZ}
+              onUpdateTargetField={onUpdateTargetField}
+              onNormalizeTargetField={onNormalizeTargetField}
+              onStartTargetSpinDrag={onStartTargetSpinDrag}
+            />
+          </div>
+        )}
+      </div>
+    )}
+  </section>
 )
