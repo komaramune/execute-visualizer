@@ -217,6 +217,14 @@ const selectorCompletions = (): CommandCompletion[] =>
     { label: '@r', insertText: '@r' },
   ])
 
+const getCompletionItems = (completedTokens: string[], fragment: string, panels: CompletionEntityPanel[]): CommandCompletion[] => {
+  const baseItems = getExecuteCompletions(completedTokens)
+  const expectsSelector = baseItems.some((item) => item.insertText.trimStart().startsWith('@'))
+  return expectsSelector && fragment.startsWith('@')
+    ? selectorTokenCompletions(fragment, panels)
+    : filterCompletions(baseItems, fragment)
+}
+
 const coordinateTemplateCompletions = (): CommandCompletion[] => [
   { label: '~ ~ ~', insertText: '~ ~ ~' },
   { label: '^ ^ ^', insertText: '^ ^ ^' },
@@ -366,18 +374,33 @@ export const getCommandCompletionContext = (
 ): CommandCompletionContext => {
   const boundedCursor = Math.min(Math.max(cursor, 0), input.length)
   const tokens = tokenizeExecuteWithRanges(input)
-  const activeToken = tokens.find((token) => token.start <= boundedCursor && boundedCursor <= token.end) ?? null
+  const tokenAtCursor = tokens.find((token) => token.start <= boundedCursor && boundedCursor <= token.end) ?? null
+
+  const activeToken = (() => {
+    if (!tokenAtCursor) {
+      return null
+    }
+
+    if (boundedCursor < tokenAtCursor.end) {
+      return tokenAtCursor
+    }
+
+    const completedBeforeToken = tokens
+      .filter((token) => token.end <= tokenAtCursor.start)
+      .map((token) => token.text)
+    const matchingItems = getCompletionItems(completedBeforeToken, tokenAtCursor.text, panels)
+    const isExactCompletion = matchingItems.some((item) => item.insertText.trim() == tokenAtCursor.text || item.label.trim() == tokenAtCursor.text)
+
+    return isExactCompletion ? null : tokenAtCursor
+  })()
+
   const rangeStart = activeToken?.start ?? boundedCursor
-  const rangeEnd = activeToken?.end ?? boundedCursor
+  const rangeEnd = boundedCursor
   const fragment = activeToken ? input.slice(rangeStart, boundedCursor) : ''
   const completedTokens = tokens
     .filter((token) => token.end <= rangeStart)
     .map((token) => token.text)
-  const baseItems = getExecuteCompletions(completedTokens)
-  const expectsSelector = baseItems.some((item) => item.insertText.trimStart().startsWith('@'))
-  const items = expectsSelector && fragment.startsWith('@')
-    ? selectorTokenCompletions(fragment, panels)
-    : filterCompletions(baseItems, fragment)
+  const items = getCompletionItems(completedTokens, fragment, panels)
 
   return {
     items,

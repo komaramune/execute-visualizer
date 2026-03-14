@@ -89,7 +89,7 @@ export const ViewOptionsPanel = ({
   onNormalizeTargetField,
   onStartTargetSpinDrag,
 }: ViewOptionsPanelProps) => (
-  <section className="viewer-options-section">
+  <>
     <div className="entity-head panel-toggle-head">
       <div className="panel-head-title">
         <h2>View Options</h2>
@@ -165,5 +165,5 @@ export const ViewOptionsPanel = ({
         )}
       </div>
     )}
-  </section>
+  </>
 )

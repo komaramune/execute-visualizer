@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import {
   AxesHelper,
+  BoxGeometry,
   BufferGeometry,
   Color,
   GridHelper,
@@ -10,6 +11,7 @@ import {
   LineDashedMaterial,
   Material,
   Mesh,
+  MeshBasicMaterial,
   Matrix4,
   Object3D,
   PerspectiveCamera,
@@ -17,6 +19,7 @@ import {
   PointsMaterial,
   Quaternion,
   Scene,
+  SphereGeometry,
   Vector2,
   Vector3,
   WebGLRenderer,
@@ -28,6 +31,7 @@ import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 import type { CommandSourceState, EntityState, ExecuteStep, Vec3 } from '../types/execute'
+import type { SelectorVisualization } from '../selectors/selectorVisualization'
 import { colorForSubcommandKind } from './subcommandColors'
 
 type RunMarkerState = {
@@ -50,6 +54,7 @@ type ViewerProps = {
   markerSizeMultiplier: number
   markerOpacity: number
   cameraTarget: Vec3
+  selectorVisualization: SelectorVisualization | null
 }
 
 type Runtime = {
@@ -82,6 +87,10 @@ const DEFAULT_MARKER_OPACITY = 0.5
 const RUN_MARKER_COLOR = 0xffffff
 const ENTITY_MARKER_COLOR = 0xff4d4d
 const HITBOX_COLOR = 0x9aa3ad
+const SELECTOR_DISTANCE_COLOR = 0x67cfff
+const SELECTOR_DISTANCE_MIN_COLOR = 0xa8b6ff
+const SELECTOR_BOX_COLOR = 0xffc56b
+const SELECTOR_ORIGIN_COLOR = 0xffffff
 
 
 const toThree = (v: Vec3): Vector3 => new Vector3(v.x, v.y, v.z)
@@ -348,6 +357,43 @@ const createHitboxMarker = (
   return marker
 }
 
+const createSelectorSphere = (origin: Vec3, radius: number, color: number, opacity: number): Object3D => {
+  if (radius <= 0.0001) {
+    return createPointMarker(origin, color, false, opacity)
+  }
+
+  const material = new MeshBasicMaterial({
+    color,
+    wireframe: true,
+    transparent: true,
+    opacity,
+    depthTest: false,
+    depthWrite: false,
+  })
+  const sphere = new Mesh(new SphereGeometry(radius, 24, 16), material)
+  sphere.position.copy(toThree(origin))
+  sphere.renderOrder = 16
+  return sphere
+}
+
+const createSelectorBox = (min: Vec3, max: Vec3, color: number, opacity: number): Mesh => {
+  const width = Math.max(max.x - min.x, 0.001)
+  const height = Math.max(max.y - min.y, 0.001)
+  const depth = Math.max(max.z - min.z, 0.001)
+  const material = new MeshBasicMaterial({
+    color,
+    wireframe: true,
+    transparent: true,
+    opacity,
+    depthTest: false,
+    depthWrite: false,
+  })
+  const box = new Mesh(new BoxGeometry(width, height, depth), material)
+  box.position.set((min.x + max.x) / 2, (min.y + max.y) / 2, (min.z + max.z) / 2)
+  box.renderOrder = 16
+  return box
+}
+
 const createRunMarker = (
   pos: Vec3,
   yaw: number,
@@ -431,7 +477,7 @@ const bumpAxesOverGrid = (axes: AxesHelper): void => {
   axes.renderOrder = 10
 }
 
-export function ThreeViewer({ entities, steps, runStates, highlightedStepId, highlightedEntityId, highlightedStepIds, highlightedRunBranchId, highlightedRunAll, hiddenRunBranchIds, hiddenStepIds, markerSizeMultiplier, markerOpacity, cameraTarget }: ViewerProps) {
+export function ThreeViewer({ entities, steps, runStates, highlightedStepId, highlightedEntityId, highlightedStepIds, highlightedRunBranchId, highlightedRunAll, hiddenRunBranchIds, hiddenStepIds, markerSizeMultiplier, markerOpacity, cameraTarget, selectorVisualization }: ViewerProps) {
   const hostRef = useRef<HTMLDivElement | null>(null)
   const runtimeRef = useRef<Runtime | null>(null)
   const markerSizeRef = useRef(markerSizeMultiplier)
@@ -608,6 +654,52 @@ export function ThreeViewer({ entities, steps, runStates, highlightedStepId, hig
     runtime.pathLineMaterials = []
     runtime.arrowLineMaterials = []
 
+    if (selectorVisualization) {
+      const originMarker = createPointMarker(
+        selectorVisualization.origin,
+        SELECTOR_ORIGIN_COLOR,
+        false,
+        Math.min(markerOpacity + 0.15, 1),
+      )
+      runtime.markerRoot.add(originMarker)
+
+      const distanceRange = selectorVisualization.distance
+      if (distanceRange) {
+        if (distanceRange.max !== null) {
+          runtime.markerRoot.add(
+            createSelectorSphere(
+              selectorVisualization.origin,
+              distanceRange.max,
+              SELECTOR_DISTANCE_COLOR,
+              Math.min(markerOpacity * 0.45, 0.55),
+            ),
+          )
+        }
+
+        if (distanceRange.min !== null && (distanceRange.max === null || Math.abs(distanceRange.max - distanceRange.min) > 0.0001)) {
+          runtime.markerRoot.add(
+            createSelectorSphere(
+              selectorVisualization.origin,
+              distanceRange.min,
+              SELECTOR_DISTANCE_MIN_COLOR,
+              Math.min(markerOpacity * 0.35 + 0.1, 0.45),
+            ),
+          )
+        }
+      }
+
+      if (selectorVisualization.box) {
+        runtime.markerRoot.add(
+          createSelectorBox(
+            selectorVisualization.box.min,
+            selectorVisualization.box.max,
+            SELECTOR_BOX_COLOR,
+            Math.min(markerOpacity * 0.55, 0.65),
+          ),
+        )
+      }
+    }
+
     entities.forEach((currentEntity) => {
       const isEntityHighlighted = highlightedEntityId === currentEntity.id
       const shouldShowHitbox = currentEntity.entityType !== 'marker' && currentEntity.width > 0 && currentEntity.height > 0
@@ -722,7 +814,7 @@ export function ThreeViewer({ entities, steps, runStates, highlightedStepId, hig
     for (const material of runtime.arrowLineMaterials) {
       material.resolution.set(size.x, size.y)
     }
-  }, [cameraTarget, entities, steps, runStates, highlightedStepId, highlightedEntityId, highlightedStepIds, highlightedRunBranchId, highlightedRunAll, hiddenRunBranchIds, hiddenStepIds, markerOpacity])
+  }, [cameraTarget, entities, steps, runStates, highlightedStepId, highlightedEntityId, highlightedStepIds, highlightedRunBranchId, highlightedRunAll, hiddenRunBranchIds, hiddenStepIds, markerOpacity, selectorVisualization])
 
   return <div className="viewer-canvas" ref={hostRef} />
 }

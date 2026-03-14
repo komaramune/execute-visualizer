@@ -30,6 +30,7 @@ type CommandBranchTreeProps = {
   visibleParseError: ParseError | null
   onClearHoverState: () => void
   onSetHoveredStepId: (value: string | null) => void
+  onSetHoveredSelectorPreview: (value: { branchId: string; subcommandIndex: number } | null) => void
   onSetHoveredRunBranchId: (value: string | null) => void
   onSetHoveredRowBranchId: (value: string | null) => void
   onSetHoveredColumnIndex: (value: number | null) => void
@@ -83,6 +84,7 @@ export const CommandBranchTree = ({
   visibleParseError,
   onClearHoverState,
   onSetHoveredStepId,
+  onSetHoveredSelectorPreview,
   onSetHoveredRunBranchId,
   onSetHoveredRowBranchId,
   onSetHoveredColumnIndex,
@@ -104,6 +106,7 @@ export const CommandBranchTree = ({
     onSetHoveringRoot(true)
     onSetHoveredStepId(null)
     onSetHoveredRunBranchId(null)
+    onSetHoveredSelectorPreview(null)
     onSetHoveredRowBranchId(null)
     onSetHoveredColumnIndex(null)
     onSetHoveringRunColumn(false)
@@ -112,6 +115,7 @@ export const CommandBranchTree = ({
   const handleStepHover = (stepId: string) => {
     onSetHoveringRoot(false)
     onSetHoveredRunBranchId(null)
+    onSetHoveredSelectorPreview(null)
     onSetHoveredStepId(stepId)
     onSetHoveredRowBranchId(null)
     onSetHoveredColumnIndex(null)
@@ -121,6 +125,7 @@ export const CommandBranchTree = ({
   const handleRunHover = (branchId: string) => {
     onSetHoveringRoot(false)
     onSetHoveredStepId(null)
+    onSetHoveredSelectorPreview(null)
     onSetHoveredRunBranchId(branchId)
     onSetHoveredRowBranchId(null)
     onSetHoveredColumnIndex(null)
@@ -135,7 +140,7 @@ export const CommandBranchTree = ({
     >
       <div className="entity-head command-preview-head panel-toggle-head">
         <div className="panel-head-title">
-          <h2>Subcommand Branch Tree</h2>
+          <h2>Subcommand Context Tree</h2>
           <PanelCollapseButton axis="vertical" collapsed={collapsed} onClick={onToggleCollapsed} />
         </div>
       </div>
@@ -249,7 +254,25 @@ export const CommandBranchTree = ({
                       if (!step) {
                         return (
                           <td key={`${row.branchId}-gap-${subcommandIndex}`}>
-                            <span className="command-group placeholder">{stepText}</span>
+                            <span
+                              data-step-hover="true"
+                              className="command-group placeholder hoverable-placeholder"
+                              onMouseEnter={() => {
+                                onSetHoveringRoot(false)
+                                onSetHoveredRunBranchId(null)
+                                onSetHoveredStepId(null)
+                                onSetHoveredRowBranchId(null)
+                                onSetHoveredColumnIndex(null)
+                                onSetHoveringRunColumn(false)
+                                onSetHoveredSelectorPreview({ branchId: row.branchId, subcommandIndex })
+                              }}
+                              onMouseMove={updateTooltip}
+                              onMouseLeave={() => {
+                                onSetHoveredSelectorPreview(null)
+                              }}
+                            >
+                              {stepText}
+                            </span>
                           </td>
                         )
                       }

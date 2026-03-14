@@ -6,6 +6,8 @@ import executeBranchStateTests from './executeBranchState.test.ts'
 import githubPagesBaseTests from './githubPagesBase.test.ts'
 import commandMacroTests from './commandMacro.test.ts'
 import serializedAppStateTests from './serializedAppState.test.ts'
+import selectorVisualizationTests from './selectorVisualization.test.ts'
+import completionContextTests from './completionContext.test.ts'
 import type { TestCase } from './testHarness.ts'
 
 const tests: TestCase[] = [
@@ -17,6 +19,8 @@ const tests: TestCase[] = [
   ...githubPagesBaseTests,
   ...commandMacroTests,
   ...serializedAppStateTests,
+  ...selectorVisualizationTests,
+  ...completionContextTests,
 ]
 
 let failed = 0

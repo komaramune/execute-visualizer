@@ -173,9 +173,18 @@ body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+.command-preview.collapsed {
+  padding: 8px 10px;
+}
+
+.command-preview.collapsed .command-preview-head {
+  margin-bottom: 0;
+}
+
 .command-preview-head h2 {
   margin: 0;
   font-size: 1rem;
+  user-select: text;
 }
 
 .command-group {
@@ -273,13 +282,6 @@ body {
   height: auto;
   align-self: start;
   overflow: visible;
-}
-
-.viewer-options-section {
-  display: grid;
-  grid-template-rows: auto auto;
-  gap: 8px;
-  min-width: 0;
 }
 
 .macro-args-section {
@@ -942,6 +944,16 @@ body {
   pointer-events: none;
 }
 
+.command-group.placeholder.hoverable-placeholder {
+  pointer-events: auto;
+}
+
+.command-group.placeholder.hoverable-placeholder.hovered,
+.command-group.placeholder.hoverable-placeholder:hover {
+  background: #2f4258;
+  color: #ffe082;
+}
+
 .branch-label-placeholder {
   visibility: hidden;
   pointer-events: none;
@@ -1074,14 +1086,19 @@ body {
 
 
 .viewer-side-stack {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 12px;
   align-content: start;
   min-width: 0;
   min-height: 0;
   height: 100%;
   overflow: auto;
+}
+
+.viewer-side-stack > .macro-args-section {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .viewer-panel > .viewer-canvas,
@@ -1221,6 +1238,49 @@ body {
 
   .side-panel {
     grid-template-rows: auto auto;
+  }
+
+  .side-panel.collapsed {
+    width: 100%;
+    max-width: none;
+    justify-self: stretch;
+    padding: 8px 10px;
+  }
+
+  .side-panel.collapsed .panel-toggle-head {
+    justify-content: flex-start;
+  }
+
+  .side-panel.collapsed .panel-head-title {
+    width: 100%;
+    max-width: none;
+    min-height: auto;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+
+  .side-panel.collapsed h2 {
+    writing-mode: horizontal-tb;
+    text-orientation: mixed;
+    font-size: 0.95rem;
+    letter-spacing: 0.02em;
+  }
+
+  .side-panel .panel-collapse-icon.horizontal {
+    transform: rotate(180deg);
+  }
+
+  .side-panel .panel-collapse-icon.horizontal.collapsed {
+    transform: rotate(0deg);
+  }
+
+  .panel-collapse-icon.vertical {
+    transform: rotate(180deg);
+  }
+
+  .panel-collapse-icon.vertical.collapsed {
+    transform: rotate(0deg);
   }
 
   .entity-list,

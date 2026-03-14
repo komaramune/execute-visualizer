@@ -22,6 +22,7 @@ import {
   type PositionField,
 } from './entities/entityPanelState'
 import { createSerializedAppState, parseSerializedAppState } from './state/serializedAppState'
+import { getSelectorVisualization } from './selectors/selectorVisualization'
 import {
   ROOT_COMMAND_SOURCE_STATE,
   buildBranchLastStateMap,
@@ -92,6 +93,7 @@ const reorderPanels = (panels: EntityPanel[], fromId: string, toId: string): Ent
 function App() {
   const [command, setCommand] = useState('')
   const [hoveredStepId, setHoveredStepId] = useState<string | null>(null)
+  const [hoveredSelectorPreview, setHoveredSelectorPreview] = useState<{ branchId: string; subcommandIndex: number } | null>(null)
   const [hoveredEntityPanelId, setHoveredEntityPanelId] = useState<string | null>(null)
   const [hoveredRunBranchId, setHoveredRunBranchId] = useState<string | null>(null)
   const [hoveredRowBranchId, setHoveredRowBranchId] = useState<string | null>(null)
@@ -461,6 +463,7 @@ function App() {
   }, [isResizingCommandPanel])
 
   const branchRows = useMemo<BranchRow[]>(() => buildBranchRows(displayedSteps), [displayedSteps])
+  const branchRowById = useMemo(() => new Map(branchRows.map((row) => [row.branchId, row])), [branchRows])
   const branchLastStateMap = useMemo(() => buildBranchLastStateMap(branchRows), [branchRows])
   const runMarkerStates = useMemo<RunMarkerState[]>(
     () => buildRunMarkerStates(runTokenIndex, displayedSteps.length, branchRows, ROOT_COMMAND_SOURCE_STATE),
@@ -487,6 +490,33 @@ function App() {
         ROOT_COMMAND_SOURCE_STATE,
       ),
     [hoveringRoot, hoveredRunBranchId, hoveredStepId, displayedSteps, branchLastStateMap],
+  )
+  const hoveredStep = useMemo(
+    () => (hoveredStepId ? displayedSteps.find((candidate) => candidate.id === hoveredStepId) ?? null : null),
+    [hoveredStepId, displayedSteps],
+  )
+  const hoveredSelectorPreviewVisualization = useMemo(() => {
+    if (hoveredSelectorPreview === null) {
+      return null
+    }
+
+    const subcommand = parseProgress.ast.subcommands[hoveredSelectorPreview.subcommandIndex]
+    const row = branchRowById.get(hoveredSelectorPreview.branchId)
+    if (!subcommand || !row) {
+      return null
+    }
+
+    const exactStep = row.steps.find((step) => step.index === hoveredSelectorPreview.subcommandIndex)
+    const previousStep = [...row.steps]
+      .reverse()
+      .find((step) => step.index < hoveredSelectorPreview.subcommandIndex)
+    const previewState = exactStep?.before ?? previousStep?.after ?? ROOT_COMMAND_SOURCE_STATE
+
+    return getSelectorVisualization(subcommand, previewState)
+  }, [hoveredSelectorPreview, parseProgress.ast.subcommands, branchRowById])
+  const selectorVisualization = useMemo(
+    () => (hoveredStep ? getSelectorVisualization(hoveredStep.subcommand, hoveredStep.before) : hoveredSelectorPreviewVisualization),
+    [hoveredStep, hoveredSelectorPreviewVisualization],
   )
   const handleToggleAll = () => {
     const stepIds = displayedSteps.map((step) => step.id)
@@ -972,6 +1002,7 @@ function App() {
               markerSizeMultiplier={markerSizeMultiplier}
               markerOpacity={markerOpacity}
               cameraTarget={cameraTarget}
+              selectorVisualization={selectorVisualization}
             />
           ) : (
             <div className="viewer-empty">No entities</div>
@@ -1056,6 +1087,7 @@ function App() {
         visibleParseError={visibleParseError}
         onClearHoverState={() => {
           setHoveredStepId(null)
+          setHoveredSelectorPreview(null)
           setHoveredRunBranchId(null)
           setHoveringRoot(false)
           setHoveredRowBranchId(null)
@@ -1064,6 +1096,7 @@ function App() {
           setHoverTooltip(null)
         }}
         onSetHoveredStepId={setHoveredStepId}
+        onSetHoveredSelectorPreview={setHoveredSelectorPreview}
         onSetHoveredRunBranchId={setHoveredRunBranchId}
         onSetHoveredRowBranchId={setHoveredRowBranchId}
         onSetHoveredColumnIndex={setHoveredColumnIndex}

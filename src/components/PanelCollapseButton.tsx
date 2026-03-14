@@ -24,7 +24,10 @@ export const PanelCollapseButton = ({ collapsed, onClick, axis = 'horizontal' }:
   <button
     type="button"
     className="mini-btn panel-collapse-btn icon-btn"
-    onClick={onClick}
+    onClick={(event) => {
+      event.stopPropagation()
+      onClick()
+    }}
     aria-label={collapsed ? 'Expand panel' : 'Collapse panel'}
     title={collapsed ? 'Expand' : 'Collapse'}
   >
