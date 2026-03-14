@@ -1,0 +1,35 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">Execute Visualizer favicon</title>
+  <desc id="desc">A dark blue icon with green, blue, and red axes plus a muted red two-edge locator.</desc>
+  <defs>
+    <linearGradient id="bg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#162332"/>
+      <stop offset="1" stop-color="#0a0f16"/>
+    </linearGradient>
+    <clipPath id="tile">
+      <rect x="4" y="4" width="56" height="56" rx="14"/>
+    </clipPath>
+  </defs>
+
+  <rect x="4" y="4" width="56" height="56" rx="14" fill="url(#bg)"/>
+
+  <g clip-path="url(#tile)">
+    <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M32 36.5 L32 9.5" stroke="#a6ec2d" stroke-width="2.5"/>
+      <path d="M32 36.5 L10 50.5" stroke="#00a8ff" stroke-width="2.3"/>
+      <path d="M32 36.5 L54 50.5" stroke="#ff5b5f" stroke-width="2.3"/>
+      <path d="M32 36.5 L21 43.5 L25.3 33.55" stroke="#c76573" stroke-width="1.95"/>
+    </g>
+
+    <circle cx="32" cy="36.5" r="2" fill="#c76573"/>
+  </g>
+</svg>
+
+
+
+
+
+
+
+
+
