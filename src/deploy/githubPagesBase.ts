@@ -8,6 +8,8 @@ const normalizeBase = (value: string): string => {
   return withLeadingSlash.endsWith('/') ? withLeadingSlash : `${withLeadingSlash}/`
 }
 
+const DEFAULT_PROJECT_BASE = '/execute-visualizer/'
+
 export const resolveGitHubPagesBase = (
   repository: string | undefined,
   explicitBase: string | undefined = undefined,
@@ -17,7 +19,7 @@ export const resolveGitHubPagesBase = (
   }
 
   if (!repository) {
-    return '/'
+    return DEFAULT_PROJECT_BASE
   }
 
   const repoName = repository.split('/')[1] ?? ''
@@ -25,5 +27,7 @@ export const resolveGitHubPagesBase = (
     return '/'
   }
 
-  return normalizeBase(repoName)
+  return repoName === 'ExecuteVisualizer'
+    ? DEFAULT_PROJECT_BASE
+    : normalizeBase(repoName)
 }
